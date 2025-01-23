@@ -11,11 +11,9 @@ class StoreTranslationOptions(TranslationOptions):
     fields = ('description', 'address')
 
 
-
 @register(Product)
 class ProductTranslationOptions(TranslationOptions):
     fields = ('product_name', 'description')
-
 
 
 @register(ProductCombo)

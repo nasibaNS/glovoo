@@ -33,6 +33,7 @@ class Store(models.Model):
     store_image = models.ImageField(upload_to='store_image/')
     store_name = models.CharField(max_length=65)
     description = models.TextField()
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='category_str')
     address = models.CharField(max_length=65)
 
     def __str__(self):
@@ -41,8 +42,9 @@ class Store(models.Model):
 
 class Contact(models.Model):
     store = models.ForeignKey(Store, on_delete=models.CASCADE, related_name='store_contact')
+    title = models.CharField(max_length=16, null=True, blank=True)
     phone_number = PhoneNumberField()
-    website = models.URLField(unique=True, verbose_name="Веб-сайт")
+    website = models.URLField(unique=True, verbose_name="Веб-сайт", null=True, blank=True)
 
     def __str__(self):
         return f'{self.store}'
@@ -68,10 +70,17 @@ class Cart(models.Model):
     def __str__(self):
         return f'{self.user}'
 
+
 class CartItem(models.Model):
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='cart_item')
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='cart_product')
     quantity = models.PositiveSmallIntegerField(default=1)
+
+    def __str__(self):
+        return f'{self.cart}'
+
+    def get_total_price(self):
+        return self.product.price * self.quantity
 
 
 
@@ -86,7 +95,6 @@ class ProductCombo(models.Model):
         return f'{self.combo_name}'
 
 
-
 class Order(models.Model):
     client = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='client_orders')
     products = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='product_orders')
@@ -98,16 +106,15 @@ class Order(models.Model):
     )
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='в обработке')
     delivery_address = models.CharField(max_length=65)
-    courier = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='courier_orders')
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f'{self.courier}, {self.status}'
+        return f'{self.products}, {self.status}'
 
 
 class Courier(models.Model):
     user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='courier_name')
-    status = models.BooleanField(default='статус курьера')
+    status = models.BooleanField(verbose_name='статус курьера')
     current_orders = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='order_set')
 
     def __str__(self):
@@ -116,11 +123,25 @@ class Courier(models.Model):
 
 class RatingCourier(models.Model):
     courier = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
-    stars = models.PositiveSmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(11)])
+    stars = models.PositiveSmallIntegerField(choices=[(i, str(i)) for i in range(1, 6)])
     created_date = models.DateField(auto_now_add=True)
 
     def __str__(self):
         return f'{self.courier}, {self.stars}'
+
+
+    def get_avg_rating(self):
+       ratings = self.ratings.all()
+       if ratings.exists():
+          return round(sum([i.stars for i in ratings]) / ratings.count(), 1)
+       return 0
+
+
+    def get_count_people(self):
+        ratings = self.ratings.all()
+        if ratings.exists():
+            return ratings.count()
+        return 0
 
 
 class Review(models.Model):
