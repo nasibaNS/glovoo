@@ -42,6 +42,7 @@ class AllAdmin(TranslationAdmin):
 admin.site.register(UserProfile)
 admin.site.register(Order)
 admin.site.register(Courier)
+admin.site.register(RatingCourier)
 admin.site.register(Review)
 admin.site.register(Cart)
 admin.site.register(CartItem)
